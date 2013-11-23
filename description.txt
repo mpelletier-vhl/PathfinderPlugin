@@ -1,0 +1,18 @@
+
+Coming Soon:
+- Options.
+- Styling.
+- Click to Activate
+
+Version History
+0.2 (22 Nov 2013)
+- Added icons
+- Added link to Character's Profile Page from within Popup.
+- Built "Solo Mode"
+- Added the User Option of "Solo Mode" rather than "GM Mode".
+
+0.1 (21 Nov 2013)
+- Added grabbing aliases from the page you're on.
+- Added grabbing aliases from the Character's Tab.
+- Removed Plugin from normal Message Board Threads.
+
