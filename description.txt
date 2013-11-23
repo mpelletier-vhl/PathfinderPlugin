@@ -1,10 +1,13 @@
 
 Coming Soon:
 - Options.
-- Styling.
-- Click to Activate
+- Styling
 
 Version History
+0.3 (23 Nov 2013)
+- Began adding support for Caching Character Information.
+- Created a Github Repository.
+
 0.2 (22 Nov 2013)
 - Added icons
 - Added link to Character's Profile Page from within Popup.
