@@ -1,9 +1,3 @@
-// Changes:
-// Remove "From this page". Just get all of them for the Campaign.
-// Spinner for when it is loading.
-// Forget about "My Characters", at least for now. Let's have it Campaign Specific.
-
-
 $(function(){
 	$('body').prepend('<div id="characters_container"><div id="characters"><h2>Characters</h2><a class="get">Get campaign characters</a><a class="clear">Clear all cached characters</a></div></div>');
 
