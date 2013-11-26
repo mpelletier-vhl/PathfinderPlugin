@@ -2,12 +2,15 @@ Coming Soon:
 - Better options page.
 - Loading spinner?
 - Styling
-- Change all class names to ensure no potential conflicts. pfplugin_ prefix or something. 
 
-Known Bugs: 
-- Getting characters via campaign doesn't work when you're Previewing a post. Consider stealing the campaign name from the Page instead of from the URL. 
+Bug: Cannot acquire characters from Preview page due to https security.
 
 Version History
+0.4 (26 Nov 2013)
+- Fix character retrieval on Preview page due to Campaign name confusion.
+- Change "Get" link name depending on what you are getting.
+- Change class names to avoid potential conflicts.
+
 0.3 (23 Nov 2013)
 - Began adding support for Caching Character Information.
 - Created a Github Repository.

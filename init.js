@@ -1,5 +1,5 @@
 $(function(){
-	$('body').prepend('<div id="characters_container"><div id="characters"><h2>Characters</h2><a class="get">Get campaign characters</a><a class="clear">Clear all cached characters</a></div></div>');
+	$('body').prepend('<div id="pfplugin_characters_container"><div id="pfplugin_characters"><h2>Characters</h2><a class="pfplugin_get"></a><a class="pfplugin_clear">Clear all cached characters</a></div></div>');
 
 	// Arrays for storing information
   var campaign_names = [];
@@ -13,27 +13,47 @@ $(function(){
 	  // Retrieve characters from local storage.
 	  retrieve_characters(settings);
 
-	  var character_page_url = $('a:contains("Characters")').attr('href');
-	  var full_url = "http://paizo.com" + character_page_url;
-		var character_name;
+		// Change link name.
+		if (settings === "gm") {
+			$('.pfplugin_get').text('Get campaign characters');
+		} else if (settings === "solo") {
+			$('.pfplugin_get').text('Get all my characters');
+		}
 
 		// Clear local storage.
-		$('a.clear').on("click", function() {
-			chrome.storage.local.clear()
+		$('a.pfplugin_clear').on("click", function() {
+			chrome.storage.local.clear();
+			$('.pfplugin.campaign_characters').remove();
 			console.log("Storage cleared")
 		});
 
 		// Clicking the Link will re-get all of the characters.
-		$('a.get').on("click", function() {
+		$('a.pfplugin_get').on("click", function() {
+			var pathname = window.location.pathname;
+		  var character_page_url = $('.bordered-box').find('a:contains("Characters")').attr('href');
+		  var characters_url;
+			var character_name;
+
 			if (settings === "gm") {
-				if (character_page_url === undefined) {
-					get_characters(('.bb-content'), campaign_names);
+				// If we're previewing a post
+				if (pathname.indexOf("cgi-bin") >= 0) {
+					characters_url = $('span.boxHeaderBig').find('a').attr('href');
+					characters_url = characters_url.substr(0, characters_url.lastIndexOf("/"));
+					characters_url = characters_url + "/characters";
+					console.log("Cannot acquire characters on Preview page");
+					// Bug: Does not currently work.
+					// get_characters_from_page(characters_url, campaign_names);
 				} else {
-					// Get the aliases from the Characters page.
-					get_characters_from_page(full_url, campaign_names);
+					if (character_page_url === undefined) {
+						// Get the aliases while on the Characters page.
+						get_characters(('.bb-content'), campaign_names);
+					} else {
+						// Get the aliases from the Characters page.
+						characters_url = "http://paizo.com" + character_page_url;
+						get_characters_from_page(characters_url, campaign_names);
+					}
 				}
 			} else if (settings === "solo") {
-				var pathname = window.location.pathname;
 				var gamepage = false;
 
 				if (pathname.indexOf("recruiting") > 0) {
@@ -115,11 +135,11 @@ $(function(){
 		  	span.find('#busy').remove();
 		  	span.find('script').remove();
 		  	span.find('table:contains("Edit")').remove();
-		  	span.addClass('hidden_helper').addClass('profile_information');
+		  	span.addClass('profile_information');
 		  	var char_url = 'http://paizo.com/people/' + character_name
 		  	span.prepend('<h2><a href="' + char_url + '">' + character_name + '</a></h2>');
-				var div = '<div class="character_content hidden_helper">' + span.html() + '</div>';
-		  	
+				var div = '<div class="pfplugin_character_content pfplugin_hidden_helper">' + span.html() + '</div>';
+
 		  	// Add character to total array.
 		  	var character = {game: campaign, charname: character_name, charinfo: div, chartype: link_type};
 		  	characters_array.push(character)
@@ -158,7 +178,13 @@ $(function(){
 	     	var campaign;
 
 	     	if (settings === "gm") {
-	     		campaign = window.location.pathname;
+	     		var url = window.location.pathname;
+	     		// If we're previewing our post
+	     		if (url.indexOf("cgi-bin") >= 0) {
+	     			campaign = $('span.boxHeaderBig').find('a').attr('href');
+	     		} else {
+	     			campaign = url;
+	     		}
 	     	} else if (settings === "solo") {
 	     		campaign = "my_characters";
 	     	}
@@ -178,10 +204,10 @@ $(function(){
 	     	});
 
 	     	if (campaign_names === true) {
-	     		$('#characters').append('<div class="campaign_characters"><h3>From this Campaign</h3></div>');
+	     		$('#pfplugin_characters').append('<div class="pfplugin campaign_characters"><h3>From this Campaign</h3></div>');
 	     	}
 	     	if (my_names === true) {
-	     		$('#characters').append('<div class="my_characters"><h3>All My Aliases</h3></div>');
+	     		$('#pfplugin_characters').append('<div class="pfplugin my_characters"><h3>All My Aliases</h3></div>');
 	     	}
 
 	    	$.each(obj.characters, function(index, value) {
@@ -190,14 +216,14 @@ $(function(){
 	    			var character_name = value.charname;
 	    			var data = value.charinfo;
 	    			var type = value.chartype;
-						$('.' + type).append('<div id="' +  character_name + '" class="a_character"><a class="toggle">' + character_name + '</a></div>')
+						$('.' + type).append('<div id="' +  character_name + '" class="pfplugin_character"><a class="pfplugin_toggle">' + character_name + '</a></div>')
 				  	$('#' + character_name).append(data);
 				  	// Bind Toggling
-				  	$('#' + character_name).find('.toggle').on("click", function() {
-							$(this).toggleClass('clicked');
-							$(this).siblings('.character_content').toggleClass('hidden_helper');
+				  	$('#' + character_name).find('.pfplugin_toggle').on("click", function() {
+							$(this).toggleClass('pfplugin_clicked');
+							$(this).siblings('.pfplugin_character_content').toggleClass('pfplugin_hidden_helper');
 				  	});
-		    	} 
+		    	}
 	    	});
 	    }
     });
