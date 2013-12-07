@@ -21,6 +21,7 @@ $(function(){
 
 		// Bind link to get characters.
 		$('a.pfplugin_get').on("click", function() {
+
 			if (settings === "gm") {
 				var character_page_url = $('a:contains("Characters")').attr('href');
 	  		var full_url = "http://paizo.com" + character_page_url;
@@ -144,7 +145,7 @@ $(function(){
 
 	    	$.each(obj.characters, function(index, value) {
 	    		// If we are in the same Campaign as the character
-	    		if (campaign_names === true) {
+	    		if (campaign_names === true && campaign === value.game) {
 	    			var character_name = value.charname;
 	    			var data = value.charinfo;
 	    			var type = value.chartype;

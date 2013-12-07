@@ -1,12 +1,14 @@
 Coming Soon:
 - Better options page.
-- Loading spinner?
+- Loading spinner? (Won't work, because fuck you, that's why)
 - Styling
 
 Bug: Cannot acquire characters from Preview page due to https security.
+Bug: When one launches into loading characters, the browser seems to lock up. Does not allow me to add a Loading Spinner beforehand, either. This is annoying. I must find a workaround. 
 
 Version History
 0.5 (6 Dec 2013)
+- Fix bug with all characters being loaded instead of campaign specific ones.
 - Huge rewrite to clean up JS.
 - Add default setting for first-time users rather than having the plugin break.
 
