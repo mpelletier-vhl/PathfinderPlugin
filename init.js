@@ -11,91 +11,40 @@ $(function(){
 		var settings = response.settings;
 
 	  // Retrieve characters from local storage.
-	  retrieve_characters(settings);
+	  retrieve_stored_characters(settings);
+		set_link_name(settings);
 
-		// Change link name.
-		if (settings === "gm") {
-			$('.pfplugin_get').text('Get campaign characters');
-		} else if (settings === "solo") {
-			$('.pfplugin_get').text('Get all my characters');
-		}
-
-		// Clear local storage.
+		// Bind link to clear local storage.
 		$('a.pfplugin_clear').on("click", function() {
-			chrome.storage.local.clear();
-			$('.pfplugin.campaign_characters').remove();
-			console.log("Storage cleared")
+			clear_local_storage();
 		});
 
-		// Clicking the Link will re-get all of the characters.
+		// Bind link to get characters.
 		$('a.pfplugin_get').on("click", function() {
-			var pathname = window.location.pathname;
-		  var character_page_url = $('.bordered-box').find('a:contains("Characters")').attr('href');
-		  var characters_url;
-			var character_name;
-
 			if (settings === "gm") {
-				// If we're previewing a post
-				if (pathname.indexOf("cgi-bin") >= 0) {
-					characters_url = $('span.boxHeaderBig').find('a').attr('href');
-					characters_url = characters_url.substr(0, characters_url.lastIndexOf("/"));
-					characters_url = characters_url + "/characters";
-					console.log("Cannot acquire characters on Preview page");
-					// Bug: Does not currently work.
-					// get_characters_from_page(characters_url, campaign_names);
+				var character_page_url = $('a:contains("Characters")').attr('href');
+	  		var full_url = "http://paizo.com" + character_page_url;
+				
+				if (character_page_url === undefined) {
+					// If we're on the Characters page, just get the aliases.
+					get_characters(('.bb-content'), campaign_names);
 				} else {
-					if (character_page_url === undefined) {
-						// Get the aliases while on the Characters page.
-						get_characters(('.bb-content'), campaign_names);
-					} else {
-						// Get the aliases from the Characters page.
-						characters_url = "http://paizo.com" + character_page_url;
-						get_characters_from_page(characters_url, campaign_names);
-					}
+					// Otherwise, get the aliases from the Characters page.
+					get_characters_from_page(full_url, campaign_names);
 				}
 			} else if (settings === "solo") {
-				var gamepage = false;
-
-				if (pathname.indexOf("recruiting") > 0) {
-					gamepage = true;
-				} else if (pathname.indexOf("discussion") > 0) {
-					gamepage = true;
-				} else if (pathname.indexOf("gameplay") > 0) {
-					gamepage = true;
-				}
-
-				if (gamepage === true) {
-					var username_select = $('select[name="person"]');
-					username_select.find('option').each(function() {
-						var character_name = parse_names($(this).text());
-						add_to_array(my_names, character_name)
-					});
-				} else {
-					var link = $('td.functionalNav:contains("Welcome")').find('a');
-					var char_url = link.attr('href');
-					var alias_url = "http://paizo.com" + char_url + "/aliases";
-					get_characters_from_page(alias_url, my_names);
-				}
-			}
-
-			// Get the Campaign Name
-			var campaign = window.location.pathname;
-			campaign = campaign.replace(/campaigns/,'').split('/');
-			campaign = campaign[2];
+				var profile_url = $('td.functionalNav:contains("Welcome")').find('a').attr('href');
+				var alias_url = "http://paizo.com" + profile_url + "/aliases";
+				get_characters_from_page(alias_url, my_names);
+			} 
 
 			// With each name in each array, get the data and place it onto the page.
-			if (campaign_names.length > 0)  {
-				campaign_names.sort();
-				$.each(campaign_names, function(index, item) {
-					make_links('campaign_characters', item, campaign);
-				});
+			if (campaign_names.length > 0) {
+				var campaign = get_campaign_name();
+				get_character_data(campaign_names, campaign);
 			}
-
 			if (my_names.length > 0) {
-				my_names.sort();
-				$.each(my_names, function(index, item) {
-					make_links('my_characters', item, "my_characters");
-				});
+				get_character_data(my_names, "my_characters");
 			}
 
 			// Store Characters in Local Storage.
@@ -104,11 +53,11 @@ $(function(){
   		});
 
   		// Retrieve Characters
-	  	retrieve_characters(settings);
+	  	retrieve_stored_characters(settings);
 		});
 	});
 
-	// Functions
+	// General Functions
 	function add_to_array(array, item) {
 		var found = $.inArray(item, array);
 
@@ -123,31 +72,96 @@ $(function(){
 		return name;
 	}
 
-	function make_links(link_type, character_name, campaign) {
-		url = "http://paizo.com/people/" + character_name;
+	function get_campaign_name() {
+		var url = window.location.pathname;
+		var campaign;
 
-	 	var xhr = new XMLHttpRequest();
-		xhr.open("GET", url, false);
-		xhr.onreadystatechange = function() {
-			if (xhr.readyState == 4) {
-		  	var fullpage = xhr.responseText;
-		  	var span = $(fullpage).find('span:contains("About")');
-		  	span.find('#busy').remove();
-		  	span.find('script').remove();
-		  	span.find('table:contains("Edit")').remove();
-		  	span.addClass('profile_information');
-		  	var char_url = 'http://paizo.com/people/' + character_name
-		  	span.prepend('<h2><a href="' + char_url + '">' + character_name + '</a></h2>');
-				var div = '<div class="pfplugin_character_content pfplugin_hidden_helper">' + span.html() + '</div>';
-
-		  	// Add character to total array.
-		  	var character = {game: campaign, charname: character_name, charinfo: div, chartype: link_type};
-		  	characters_array.push(character)
-		   }
-		 }
-		 xhr.send();
+		if (url.indexOf('WebObjects') >= 0) {
+			campaign = $('.bb-title').find('a').attr('href');
+		} else {
+			campaign = url.replace(/campaigns/,'').split('/');
+			campaign = campaign[2];
+		}
+		return campaign;
 	}
 
+	function set_link_name(settings) {
+		if (settings === "gm") {
+			$('.pfplugin_get').text('Get campaign characters');
+		} else if (settings === "solo") {
+			$('.pfplugin_get').text('Get all my characters');
+		}
+	}
+
+	// Storage Functions
+	function clear_local_storage() {
+		chrome.storage.local.clear();
+		$('.pfplugin.campaign_characters').remove();
+		console.log("Local storage cleared");
+	}
+
+	function retrieve_stored_characters(settings) {
+		console.log("Retrieve called");
+		chrome.storage.local.get(null, function(obj) {
+			// Check to see if local storage is actually empty.
+			if (!$.isEmptyObject(obj)) {
+	      var results = JSON.stringify(obj);
+	     	var campaign_names = false;
+	     	var my_names = false;
+	     	var campaign;
+
+	     	if (settings === "gm") {
+	     		campaign = get_campaign_name();
+	     	} else if (settings === "solo") {
+	     		campaign = "my_characters";
+	     	}
+
+	    	$.each(obj.characters, function(index, value) {
+	    		characters_array.push(value);
+	     		if (campaign.indexOf(value.game) >= 0) {
+	     			if (value.chartype === "campaign_characters") {
+	     				campaign_names = true;
+	     			}
+	     			if (value.chartype === "my_characters") {
+	     				my_names = true;
+	     			}
+	     		} else if (campaign.indexOf('WebObjects') >= 0) {
+	     			var this_campaign = $('.bb-title').find('a').attr('href');
+	     			if (this_campaign.indexOf(value.game) >= 0) {
+	     				campaign_names = true;
+	     			}
+	     		} else {
+	     			console.log("Other characters");
+	     		}
+	     	});
+
+	     	if (campaign_names === true) {
+	     		$('#pfplugin_characters').append('<div class="pfplugin campaign_characters"><h3>From this Campaign</h3></div>');
+	     	}
+	     	if (my_names === true) {
+	     		$('#pfplugin_characters').append('<div class="pfplugin my_characters"><h3>All My Aliases</h3></div>');
+	     	}
+
+	    	$.each(obj.characters, function(index, value) {
+	    		// If we are in the same Campaign as the character
+	    		if (campaign_names === true) {
+	    			var character_name = value.charname;
+	    			var data = value.charinfo;
+	    			var type = value.chartype;
+						$('.' + type).append('<div id="' +  character_name + '" class="pfplugin_character"><a class="pfplugin_toggle">' + character_name + '</a></div>')
+				  	$('#' + character_name).append(data);
+				  	// Bind Toggling
+				  	$('#' + character_name).find('.pfplugin_toggle').on("click", function() {
+							$(this).toggleClass('pfplugin_clicked');
+							$(this).siblings('.pfplugin_character_content').toggleClass('pfplugin_hidden_helper');
+				  	});
+		    	} 
+	    	});
+	    }
+    });
+	}
+
+	// Character Names / Data Related
 	function get_characters_from_page(full_url, array) {
 		var xhr = new XMLHttpRequest();
 		xhr.open("GET", full_url, false);
@@ -167,66 +181,43 @@ $(function(){
 		});
 	}
 
-	function retrieve_characters(settings) {
-		console.log("Retrieve called");
-		chrome.storage.local.get(null, function(obj) {
-			// Check to see if local storage is actually empty.
-			if (!$.isEmptyObject(obj)) {
-	      var results = JSON.stringify(obj);
-	     	var campaign_names = false;
-	     	var my_names = false;
-	     	var campaign;
+	function get_character_data(character_array, campaign) {
+		var link_type = "campaign_characters"; 
 
-	     	if (settings === "gm") {
-	     		var url = window.location.pathname;
-	     		// If we're previewing our post
-	     		if (url.indexOf("cgi-bin") >= 0) {
-	     			campaign = $('span.boxHeaderBig').find('a').attr('href');
-	     		} else {
-	     			campaign = url;
-	     		}
-	     	} else if (settings === "solo") {
-	     		campaign = "my_characters";
-	     	}
+		if (campaign === "my_characters") {
+			link_type = "my_characters";
+		}
 
-	    	$.each(obj.characters, function(index, value) {
-	    		characters_array.push(value);
+		character_array.sort();
+		$.each(character_array, function(index, item) {
+			make_links(link_type, item, campaign);
+		});
+	}
 
-	     		if (campaign.indexOf(value.game) >= 0) {
+	// Display Character Data
+	function make_links(link_type, character_name, campaign) {
+		url = "http://paizo.com/people/" + character_name;
 
-	     			if (value.chartype === "campaign_characters") {
-	     				campaign_names = true;
-	     			}
-	     			if (value.chartype === "my_characters") {
-	     				my_names = true;
-	     			}
-	     		}
-	     	});
+	 	var xhr = new XMLHttpRequest();
+		xhr.open("GET", url, false);
+		xhr.onreadystatechange = function() {
+			if (xhr.readyState == 4) {
+		  	var fullpage = xhr.responseText;
+		  	var span = $(fullpage).find('span:contains("About")');
+		  	span.find('#busy').remove();
+		  	span.find('script').remove();
+		  	span.find('table:contains("Edit")').remove();
+		  	span.addClass('profile_information');
+		  	var char_url = 'http://paizo.com/people/' + character_name
+		  	span.prepend('<h2><a href="' + char_url + '">' + character_name + '</a></h2>');
+				var div = '<div class="pfplugin_character_content pfplugin_hidden_helper">' + span.html() + '</div>';
 
-	     	if (campaign_names === true) {
-	     		$('#pfplugin_characters').append('<div class="pfplugin campaign_characters"><h3>From this Campaign</h3></div>');
-	     	}
-	     	if (my_names === true) {
-	     		$('#pfplugin_characters').append('<div class="pfplugin my_characters"><h3>All My Aliases</h3></div>');
-	     	}
-
-	    	$.each(obj.characters, function(index, value) {
-	    		// If we are in the same Campaign as the character
-	    		if (campaign.indexOf(value.game) >= 0) {
-	    			var character_name = value.charname;
-	    			var data = value.charinfo;
-	    			var type = value.chartype;
-						$('.' + type).append('<div id="' +  character_name + '" class="pfplugin_character"><a class="pfplugin_toggle">' + character_name + '</a></div>')
-				  	$('#' + character_name).append(data);
-				  	// Bind Toggling
-				  	$('#' + character_name).find('.pfplugin_toggle').on("click", function() {
-							$(this).toggleClass('pfplugin_clicked');
-							$(this).siblings('.pfplugin_character_content').toggleClass('pfplugin_hidden_helper');
-				  	});
-		    	}
-	    	});
-	    }
-    });
+		  	// Add character to total array.
+		  	var character = {game: campaign, charname: character_name, charinfo: div, chartype: link_type};
+		  	characters_array.push(character);
+		   }
+		 }
+		 xhr.send();
 	}
 
 });
