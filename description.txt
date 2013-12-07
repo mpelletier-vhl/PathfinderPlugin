@@ -6,6 +6,10 @@ Coming Soon:
 Bug: Cannot acquire characters from Preview page due to https security.
 
 Version History
+0.5 (6 Dec 2013)
+- Huge rewrite to clean up JS.
+- Add default setting for first-time users rather than having the plugin break.
+
 0.4 (26 Nov 2013)
 - Fix character retrieval on Preview page due to Campaign name confusion.
 - Change "Get" link name depending on what you are getting.
